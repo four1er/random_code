@@ -3,8 +3,8 @@
 #include <atomic>
 #include <iostream>
 
-#include "../utils/arena.h"
-#include "../utils/random.h"
+#include "utils/arena.h"
+#include "utils/random.h"
 
 namespace leveldb {
 

@@ -1,0 +1,9 @@
+cc_library(
+    name="skiplist",
+    hdrs=["skiplist.h"],
+    visibility=["//visibility:public"],
+    deps=[
+        "//utils:random",
+        "//utils:arena",    
+    ],
+)
