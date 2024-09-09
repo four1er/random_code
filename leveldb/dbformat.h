@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "leveldb/version_edit.h"
+#include "version_edit.h"
 
 namespace leveldb {
 typedef uint64_t SequenceNumber;
