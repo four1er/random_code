@@ -39,9 +39,7 @@ struct schedule *coroutine_open(void) {
  */
 void _delete_co(struct coroutine *co) {
   free(co->stack);
-  co->stack = NULL;
   free(co);
-  co = NULL;
 }
 
 /**
@@ -50,7 +48,7 @@ void _delete_co(struct coroutine *co) {
  * @param S 协程调度器， 指针类型
  */
 void coroutine_close(struct schedule *S) {
-  int i = 0;
+  int i;
   for (i = 0; i < S->cap; i++) {
     struct coroutine *co = S->co[i];
     if (co) {
@@ -60,7 +58,6 @@ void coroutine_close(struct schedule *S) {
   free(S->co);
   S->co = NULL;
   free(S);
-  return;
 }
 
 /**
@@ -125,7 +122,7 @@ static void mainfunc(uint32_t low32, uint32_t high32) {
   struct schedule *S = (struct schedule *)ptr;
   int id = S->running;
   struct coroutine *co = S->co[id];
-  co->func(co->ud, S);
+  co->func(S, co->ud);
   _delete_co(co);
   S->co[id] = NULL;
   S->nco = S->nco - 1;
@@ -139,10 +136,10 @@ static void mainfunc(uint32_t low32, uint32_t high32) {
  * @param [in] id
  */
 void coroutine_resume(struct schedule *S, int id) {
-  assert(S->running != -1);
-  assert(id > 0 && id < S->cap);
+  assert(S->running == -1);
+  assert(id >= 0 && id < S->cap);
   struct coroutine *co = S->co[id];
-  assert(co);
+  if (co == NULL) return;
   if (co->status == COROUTINE_READY) {
     // get current context, and save it into co->ctx。
     getcontext(&co->ctx);
@@ -165,6 +162,14 @@ void coroutine_resume(struct schedule *S, int id) {
   }
   return;
 }
+
+/**
+ * @brief get coroutine status
+ *
+ * @param [in] S
+ * @param [in] id
+ * @return int
+ */
 int coroutine_status(struct schedule *S, int id) {
   assert(id >= 0 && id < S->cap);
   if (S->co[id] == NULL) {
@@ -175,7 +180,13 @@ int coroutine_status(struct schedule *S, int id) {
 
 int coroutine_running(struct schedule *S) { return S->running; }
 
-void _save_stack(struct coroutine *C, char *top) {
+/**
+ * @brief save current coroutine stack
+ *
+ * @param [in] C coroutine
+ * @param [in] top current stack top
+ */
+static void _save_stack(struct coroutine *C, char *top) {
   char dummy = 0;
   assert(top - &dummy <= STACK_SIZE);
   if (C->cap < top - &dummy) {
@@ -188,11 +199,16 @@ void _save_stack(struct coroutine *C, char *top) {
   }
 }
 
+/**
+ * @brief yield current coroutine
+ *
+ * @param [in] S
+ */
 void coroutine_yield(struct schedule *S) {
   int id = S->running;
-  assert(id > 0 && id < S->cap);
+  assert(id >= 0);
   struct coroutine *C = S->co[id];
-  assert(C);
+  assert((char *)&C > S->stack);
   _save_stack(C, S->stack + STACK_SIZE);
   C->status = COROUTINE_SUSPEND;
   S->running = -1;
