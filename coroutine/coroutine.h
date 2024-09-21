@@ -22,6 +22,10 @@ struct schedule;
 #define STACK_SIZE 1024 * 1024
 typedef void (*coroutine_func)(struct schedule *, void *ud);
 #define DEFAULT_COROUTINE 16
+#define COROUTINE_DEAD 0
+#define COROUTINE_READY 1
+#define COROUTINE_RUNNING 2
+#define COROUTINE_SUSPEND 3
 
 // 先声明协程类型
 struct coroutine;
